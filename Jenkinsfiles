@@ -1,0 +1,54 @@
+pipeline
+{
+    agent any
+    stages
+    {
+        stage('Continous Download')
+        {
+            steps
+            {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], 
+				doGenerateSubmoduleConfigurations: false, 
+				extensions: [], 
+				submoduleCfg: [], 
+				userRemoteConfigs: [[url: 'https://github.com/satishnaga1/hello-world.git']]])
+            }
+        }
+        stage('Continous Build')
+        {
+            steps
+            {
+                sh 'mvn package'
+            }
+        }
+		stage ('tomcat shutdown')
+		{
+		   steps
+		   {
+		    
+			sh 'ssh root@172.31.49.129 sh /opt/tomcat/bin/shutdown.sh '
+            
+              }
+		
+		}
+        stage('Continous Deployment')
+        {
+            steps
+            {
+                input message: 'Do you want to proceed to deply tomcat server', submitter: 'nagasatish'
+                sh label: '', script: 'scp /var/lib/jenkins/workspace/DemoJob/webapp/target/webapp.war ec2-user@172.31.49.129:/opt/tomcat/webapps/qaenv.war'
+            }
+        }
+		stage ('Running Tomcat')
+		{
+		   steps
+		   {
+		   
+		       sh 'ssh root@172.31.49.129 sh /opt/tomcat/bin/startup.sh'
+		   
+		   }
+		
+		}
+		 
+    }
+}
